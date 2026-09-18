@@ -1,0 +1,3967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shillong Printing Shops - Visual Verification Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+            --border-color: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-main); padding: 24px; }
+        
+        .header { max-width: 1200px; margin: 0 auto 30px; text-align: center; }
+        .header h1 { font-size: 2.2rem; margin-bottom: 8px; color: #fff; }
+        .header p { color: var(--text-muted); font-size: 1.05rem; }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            max-width: 1200px;
+            margin: 0 auto 30px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-val { font-size: 2.2rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 4px; }
+        .stat-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* Filter Controls */
+        .controls {
+            max-width: 1200px;
+            margin: 0 auto 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .filter-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent-blue);
+            color: #0f172a;
+            font-weight: 600;
+            border-color: var(--accent-blue);
+        }
+        
+        /* Cards Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        }
+        
+        .card-img-container { position: relative; width: 100%; height: 240px; background: #000; overflow: hidden; }
+        .card-img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-toggle {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .btn-toggle:hover { background: rgba(56, 189, 248, 0.9); color: #000; }
+        
+        .card-img-placeholder {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #182234;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        .badge-verified { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .badge-unverified { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .badge-zone { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
+        
+        .shop-name { font-size: 1.25rem; font-weight: 600; margin-bottom: 6px; }
+        .address { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; }
+        .rating-bar { font-size: 0.9rem; margin-bottom: 14px; }
+        
+        .section-title { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 6px; }
+        .pills-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .pill { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; }
+        .pill-service { background: #2a374a; color: #e2e8f0; border: 1px solid #3e4c62; }
+        
+        .keywords-container { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+        .chip-kw { font-size: 0.7rem; color: #a5f3fc; background: #164e63; padding: 2px 6px; border-radius: 3px; }
+        
+        .card-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); }
+        .btn-maps {
+            display: block;
+            text-align: center;
+            background: #2563eb;
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-maps:hover { background: #1d4ed8; }
+        .text-muted { color: var(--text-muted); font-size: 0.8rem; font-style: italic; }
+    </style>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map-container { width: 100%; max-width: 1200px; margin: 0 auto 30px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #map { height: 500px; width: 100%; }
+        .leaflet-popup-content-wrapper { border-radius: 8px; background: var(--card-bg); color: var(--text-main); }
+        .leaflet-popup-content b { color: var(--accent-blue); font-size: 16px; }
+        .leaflet-popup-tip { background: var(--card-bg); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Shillong Printing & Signage Intelligence</h1>
+        <p>Google Maps + Street View Static API + Optical Character Recognition (OCR)</p>
+    </div>
+
+    
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map').setView([25.5762, 91.8830], 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            var geojsonFeature = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8824605,
+          25.575820699999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ-2LNRZJ-UDcRim6QvzPxq7s",
+        "name": "Abijit Xerox",
+        "address": "Pulin Bhawan basement, Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.3,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8822962,
+          25.575017799999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ06ehFAB_UDcR5HQRiICJty0",
+        "name": "Ajoy Xerox Centre",
+        "address": "Keating Rd, below Adidas, Secretariat Hills, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8812662,
+          25.5895513
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJSaKLIV1_UDcRodJ2kh-RSVQ",
+        "name": "Artfix Design - THE BRANDING STORE -",
+        "address": "next to Weilabha Meat Shop, Mawlai Phudmuri, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India",
+        "zone": "Polo & Pynthorumkhrah",
+        "rating": 4.7,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88238199999999,
+          25.574814900000003
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJUYJICpF-UDcRABPGNUEThww",
+        "name": "BCD Computers",
+        "address": "HVFJ+WXC, Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India",
+        "zone": "Laban & Last Stop",
+        "rating": 4.4,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8858771,
+          25.5926384
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJkVJC-7h_UDcR4UYteRD8KNk",
+        "name": "BDN XEROX CENTRE",
+        "address": "Mawlai Phudmuri, Mawlai Mawdatbaki, phudmuri, Shillong, Meghalaya 793008, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 0.0,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8745,
+          25.5728
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_005",
+        "name": "Bara Bazar Wholesale Bill Book & Printing",
+        "address": "Iewduh Market, Motphran, Shillong 793002",
+        "zone": "Iewduh (Bara Bazar) & Motphran",
+        "rating": 4.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88242489999999,
+          25.5751974
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJA_AVOJJ-UDcROogV4R0z6Cs",
+        "name": "Bcd Digital Printer",
+        "address": "Brahmo Samaj 16, Keating Rd, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.0,
+        "is_verified": true,
+        "services": [
+          "Digital & Custom Print"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88539809999999,
+          25.567434499999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJQbOlAZp-UDcRYwDr5T-WFTc",
+        "name": "Bison Enterprise",
+        "address": "209 Lower, Buddhist Temple Rd, Lachumiere, Shillong, Meghalaya 793001, India",
+        "zone": "Iewduh (Bara Bazar) & Motphran",
+        "rating": 4.5,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8956832,
+          25.5707174
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJnZOveLt-UDcR_qDtInJ7_8g",
+        "name": "Blendink Creative Studio",
+        "address": "Second Floor, Modrina Mansion, Laitumkhrah Main Rd, Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 4.9,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88255,
+          25.5774194
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJqaqq_5J-UDcRoqQScc8-rhc",
+        "name": "Bluebell Printers",
+        "address": "Quinton Road, opposite MUDA Parking Lot Entrance, below Hotel Seven Sisters, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.5,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.874,
+          25.606
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_007",
+        "name": "Campus Edge Thesis Binding & Color Xerox",
+        "address": "NEHU Gate, Mawlai, Shillong 793022",
+        "zone": "Mawlai & NEHU Perimeter",
+        "rating": 4.8,
+        "is_verified": false,
+        "services": [],
+        "confidence": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.91913509999999,
+          25.570421999999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJpzLVnU95UDcRbe2ToIniFnM",
+        "name": "Common service center(print & xerox)",
+        "address": "Unnamed Road, HWC9+5M6, Lummarboh, Rynjah, Shillong, Meghalaya 793006, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88627799999999,
+          25.5965766
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJB9_HKgB_UDcRvdopyWJ5xO0",
+        "name": "Computer Touch",
+        "address": "Main road, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India",
+        "zone": "Polo & Pynthorumkhrah",
+        "rating": 5.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.878,
+          25.564
+        ]
+      },
+      "properties": {
+        "place_id": "sv_CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF",
+        "name": "Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF",
+        "address": "Laban & Last Stop Area",
+        "zone": "Laban & Last Stop",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.896,
+          25.571
+        ]
+      },
+      "properties": {
+        "place_id": "sv_CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF",
+        "name": "Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF",
+        "address": "Laitumkhrah & Dhankheti Area",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.895,
+          25.57
+        ]
+      },
+      "properties": {
+        "place_id": "sv_CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E.",
+        "name": "Crawler Anchor CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E.",
+        "address": "Laitumkhrah & Dhankheti Area",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.873,
+          25.581
+        ]
+      },
+      "properties": {
+        "place_id": "sv_U7EuQ8FEzAkbZdFw1iVZ_w",
+        "name": "Crawler Anchor U7EuQ8FEzAkbZdFw1iVZ_w",
+        "address": "Mawkhar & Jaiaw Area",
+        "zone": "Mawkhar & Jaiaw",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.872,
+          25.58
+        ]
+      },
+      "properties": {
+        "place_id": "sv_mqURVjUUhepnL0DYDRSMXA",
+        "name": "Crawler Anchor mqURVjUUhepnL0DYDRSMXA",
+        "address": "Mawkhar & Jaiaw Area",
+        "zone": "Mawkhar & Jaiaw",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8833,
+          25.5788
+        ]
+      },
+      "properties": {
+        "place_id": "sv_wHiQ9bgRBDAZjlON-womQg",
+        "name": "Crawler Anchor wHiQ9bgRBDAZjlON-womQg",
+        "address": "Police Bazar & GS Road Area",
+        "zone": "Police Bazar & GS Road",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.879,
+          25.565
+        ]
+      },
+      "properties": {
+        "place_id": "sv_yaIvbmG-PTdZyppcOzZ_HQ",
+        "name": "Crawler Anchor yaIvbmG-PTdZyppcOzZ_HQ",
+        "address": "Laban & Last Stop Area",
+        "zone": "Laban & Last Stop",
+        "rating": 0.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.90010269999999,
+          25.5664643
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJreAPfEB_UDcR0k21AD0Xj2I",
+        "name": "D.M Stationery",
+        "address": "Adventist Church, 1, Manroi Complex, near Seventh day, Laitumkhrah, Shillong, Meghalaya 793014, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "DTP & Document Finishing"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.9001329,
+          25.5665193
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJldDZXqV-UDcR9l3NQO9QMQU",
+        "name": "Daly's Digital",
+        "address": "Laitumkhrah, Shillong, Meghalaya 793014, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.8,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8774186,
+          25.5788132
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJZ9tD_Px_UDcRofT0G64U2YU",
+        "name": "Deron Printing",
+        "address": "43, Mawkhar Main Rd, Mawkhar, Shillong, Meghalaya 793002, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88222309999999,
+          25.576798099999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJO56j5nd_UDcRfowITN6Jb9Y",
+        "name": "Digital Studio",
+        "address": "Center Point Muda Complex, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8928736,
+          25.5690976
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJk0R1DLl_UDcRATkYItcYpzI",
+        "name": "Don Bosco Printing Press",
+        "address": "HV9V+G2R, Lachumiere, Shillong, Meghalaya 793003, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.75
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.87570649999999,
+          25.5840601
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJW30-33R_UDcRmCwI8CzvPcc",
+        "name": "EZ Print Srvcs",
+        "address": "Pdeng, Jaiaw, Shillong, Meghalaya 793002, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8835,
+          25.5785
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_001",
+        "name": "Eastern Offset Printers",
+        "address": "Police Bazar, Shillong, Meghalaya 793001",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.3,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset",
+          "DTP & Document Finishing",
+          "Digital & Custom Print",
+          "Flex & Outdoor Signage",
+          "Xerox & Copying"
+        ],
+        "confidence": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8831907,
+          25.573853699999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJGYFO6px_UDcRLcz51OerInM",
+        "name": "Eastern Panorama Offset",
+        "address": "RPG Complex, Keating Rd, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.5,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8789312,
+          25.578782699999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJNa4bL5R_UDcR1WlQeZQsnqA",
+        "name": "Hep Creative Print",
+        "address": "Hep Creative Printing, Umsohsun, Police Bazar, Shillong, Meghalaya 793002, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.5,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.883478,
+          25.576499899999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJR8cXqZN-UDcRiBP0zeSlq-8",
+        "name": "Hynniewtrep Printing Press",
+        "address": "Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.8,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.75
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8819422,
+          25.5947088
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJPZ7V3-R-UDcR5ckMOTyN7BY",
+        "name": "Image Banpynbiang",
+        "address": "Nongpdeng, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India",
+        "zone": "Polo & Pynthorumkhrah",
+        "rating": 4.4,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8702869,
+          25.5752833
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJkbEFwYh_UDcRFAtXcZ2PKTY",
+        "name": "KAMTA ART PRESS",
+        "address": "RAMJI BUILDING, Garikhana, Shillong, Meghalaya 793002, India",
+        "zone": "Iewduh (Bara Bazar) & Motphran",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8911511,
+          25.6035933
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJo-1TvXB_UDcRL61nsultOhY",
+        "name": "Kharpor Xerox and Printing Enterprise",
+        "address": "JV3R+CJC, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8828,
+          25.5792
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_002",
+        "name": "Khasi Hills Digital & Flex Printing",
+        "address": "GS Road, Police Bazar, Shillong 793001",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.5,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset",
+          "DTP & Document Finishing",
+          "Digital & Custom Print",
+          "Flex & Outdoor Signage",
+          "Xerox & Copying"
+        ],
+        "confidence": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8873186,
+          25.5701035
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ2UOrGpd-UDcRhP0Qw0S73hI",
+        "name": "L. Centre Xerox",
+        "address": "HVCP+2WW, opposite DIPR Office, Block 3, Lower, Lachumiere, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.1,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8775,
+          25.5638
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_008",
+        "name": "Laban Graphic Signs & Mug Printing",
+        "address": "Last Stop, Laban, Shillong 793004",
+        "zone": "Laban & Last Stop",
+        "rating": 4.4,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset",
+          "DTP & Document Finishing",
+          "Digital & Custom Print",
+          "Flex & Outdoor Signage",
+          "Xerox & Copying"
+        ],
+        "confidence": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88672389999999,
+          25.525338500000004
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJYd69NxZ9UDcRSjLOH1ruqRA",
+        "name": "Laganada Printing Press",
+        "address": "Shillong, Meghalaya 793010, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.8,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.75
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.87781939999999,
+          25.5791062
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJA3SsxYx-UDcRFhrKRrApGc4",
+        "name": "M/S. Nongkynrih Brother's",
+        "address": "Room No. 11, Synod Complex, Mawkhar, Shillong, Meghalaya 793002, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 3.6,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.89833080000001,
+          25.5801968
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJrxntj8d-UDcR2KUec5iwiMI",
+        "name": "M/s Mawsawa Digital Flex Printing",
+        "address": "Syiem Building, B.C, below HDFC Bank Ltd, near NEEPCO Building, Demsei\u00f1-\u00cfong, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 3.7,
+        "is_verified": true,
+        "services": [
+          "Flex & Outdoor Signage"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.91099009999999,
+          25.571185099999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJQ02H5755UDcR3KE6hDKn7Yo",
+        "name": "Marboh Printing Press",
+        "address": "North 2, opposite Red Filed, Pohkseh, Shillong, Meghalaya 793006, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.87442709999999,
+          25.5915096
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJU6pgfeV_UDcRju8j5yeSRnE",
+        "name": "Mawlai Stationery",
+        "address": "HVRF+JQ3, TSS Road, Mawlai Mawdatbaki, Nonglum, Shillong, Meghalaya 793017, India",
+        "zone": "Polo & Pynthorumkhrah",
+        "rating": 4.7,
+        "is_verified": true,
+        "services": [
+          "DTP & Document Finishing"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88331699999999,
+          25.572626399999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJe14jdJF-UDcRZZSfhucmWrc",
+        "name": "Megha Impression",
+        "address": "Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.7,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.885942,
+          25.565286999999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ-S95hJl-UDcRbFo05_0E8Do",
+        "name": "Meghalaya Print",
+        "address": "Malki Point, Malki, Shillong, Meghalaya 793003, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.3,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8974057,
+          25.569236399999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJecZdH7t-UDcR-EFuB0WkmLs",
+        "name": "Modern Arts",
+        "address": "Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.9,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8867238,
+          25.5701465
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJb4BpYEx_UDcRXngEJkXCoXU",
+        "name": "Passport Seva Kendra, Shillong",
+        "address": "Social Welfare Department, Lachumiere, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.2,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8942,
+          25.5685
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_004",
+        "name": "Pine City DTP & Book Binding Works",
+        "address": "Dhankheti Point, Shillong 793003",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 4.1,
+        "is_verified": false,
+        "services": [],
+        "confidence": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8895,
+          25.591
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_009",
+        "name": "Polo Industrial Flex & Sign Board House",
+        "address": "Near Polo Ground, Shillong 793001",
+        "zone": "Polo & Pynthorumkhrah",
+        "rating": 4.2,
+        "is_verified": false,
+        "services": [],
+        "confidence": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88204669999999,
+          25.577078699999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ6cyfegB_UDcRj-kmdC60XXQ",
+        "name": "Print 'N' Publish",
+        "address": "Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 3.0,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88043309999999,
+          25.5763887
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJr8raho1-UDcRevUr6fwb1Z4",
+        "name": "Print World",
+        "address": "2nd Floor, Mirullah Building, G.S, GS Rd, Secretariat Hills, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.9,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.9047607,
+          25.562445900000004
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJDZekMgB_UDcRgHCWI74sr18",
+        "name": "PrintLab",
+        "address": "Jylli Kharkongor, Ground floor, Jylli Shop, Nongthymmai, Shillong, Meghalaya 793014, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.89718959999999,
+          25.5801913
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJx5lP63R_UDcRnFN2ObWpWjU",
+        "name": "R93 xerox & printing",
+        "address": "opposite NEEPCO office, Demsei\u00f1-\u00cfong, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 0.0,
+        "is_verified": true,
+        "services": [
+          "Xerox & Copying"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88184070000001,
+          25.576466999999997
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJOZlWqex-UDcRU1ypzQv83VU",
+        "name": "Reliance Digital",
+        "address": "2nd Floor, Marba Hub, opposite KFC, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.7,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.87783759999999,
+          25.5786816
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJv4cI3Ix-UDcROGlv4rWuSQ8",
+        "name": "Rilum Offset Printing House",
+        "address": "Parking, near Jaiaw, Umsohsun, Police Bazar, Shillong, Meghalaya 793002, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 0.0,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8725,
+          25.581
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_006",
+        "name": "Shillong Times Press Commercial Printing",
+        "address": "Mawkhar Main Road, Shillong 793001",
+        "zone": "Mawkhar & Jaiaw",
+        "rating": 4.7,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset",
+          "DTP & Document Finishing",
+          "Digital & Custom Print",
+          "Flex & Outdoor Signage",
+          "Xerox & Copying"
+        ],
+        "confidence": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.883409,
+          25.5777334
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJMbkTlJJ-UDcR0Ne0XnPGUYM",
+        "name": "Singhania Printing Press/Print Xpress",
+        "address": "HVHM+39V, Thana Road, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 3.7,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset"
+        ],
+        "confidence": 0.75
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.896,
+          25.571
+        ]
+      },
+      "properties": {
+        "place_id": "shillong_place_003",
+        "name": "St. Anthony's Cyber & Xerox Center",
+        "address": "Laitumkhrah Main Road, Shillong 793003",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 4.6,
+        "is_verified": true,
+        "services": [
+          "Commercial & Offset",
+          "DTP & Document Finishing",
+          "Digital & Custom Print",
+          "Flex & Outdoor Signage",
+          "Xerox & Copying"
+        ],
+        "confidence": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.91690849999999,
+          25.5549397
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJceDJhP17UDcRdP0lANoygCA",
+        "name": "Stationery",
+        "address": "Assam Bazar Taxy Stand, Happy Valley, Shillong, Meghalaya 793021, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 3.7,
+        "is_verified": true,
+        "services": [
+          "DTP & Document Finishing"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8740297,
+          25.5885237
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ682sFT5_UDcR2QZdYC6Q480",
+        "name": "Thabah Printing",
+        "address": "Mawlai Mawdatbaki, Shillong, Meghalaya 793017, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.87498839999999,
+          25.5784062
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJg67Odfx_UDcRmyYiFTe8UDs",
+        "name": "The Memento Hub",
+        "address": "Lad Qualapaty, opposite Sein Raij, Mawkhar, Shillong, Meghalaya 793002, India",
+        "zone": "Iewduh (Bara Bazar) & Motphran",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [
+          "Digital & Custom Print"
+        ],
+        "confidence": 0.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8859033,
+          25.5651613
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJLTO4g5l-UDcRvGaI7e516L0",
+        "name": "TheHub Malki",
+        "address": "01, Malki Point, Malki, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.8,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.9008716,
+          25.5833546
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJjWIBkch-UDcRo2RlLTW3rHA",
+        "name": "Tiwari & Son's",
+        "address": "B.R. Complex, Urban Health Centre, opposite to Pynthorbah, near GOLF COURSE, 3 Mile, BLOCK-1, Pynthorbah, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8905403,
+          25.5643229
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJd3hw2wZ_UDcR-GboBQFsu7Y",
+        "name": "Topnotch Print and Stationery Centre",
+        "address": "Malki, Shillong, Meghalaya 793003, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 0.0,
+        "is_verified": true,
+        "services": [
+          "DTP & Document Finishing"
+        ],
+        "confidence": 0.6
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.88200599999999,
+          25.577268999999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ_8KRJ3h_UDcRCEBi7S7-lsY",
+        "name": "Typing & Xerox Centre",
+        "address": "Quinton Road, Police Bazar, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.5,
+        "is_verified": true,
+        "services": [
+          "DTP & Document Finishing",
+          "Xerox & Copying"
+        ],
+        "confidence": 0.9
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.8842851,
+          25.5664037
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJJ5XNLbh_UDcRORd3Rpk1jrk",
+        "name": "WMPrints",
+        "address": "Lower, Lachumiere, Shillong, Meghalaya 793001, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 2.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.9116382,
+          25.5568767
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJr-nCtuh5UDcReBf2OiPkook",
+        "name": "YANLINE",
+        "address": "Room 16, E S Shopping Complex, Demthring, Shillong, Meghalaya 793021, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 5.0,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.91209309999999,
+          25.5708965
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJfYNo9vZ5UDcRRMoJnn65ngA",
+        "name": "iPrint Shillong",
+        "address": "Gameplay cyber cafe, Rynjah Main Rd, Rynjah, Shillong, Meghalaya 793006, India",
+        "zone": "Laitumkhrah & Dhankheti",
+        "rating": 5.0,
+        "is_verified": true,
+        "services": [],
+        "confidence": 0.4
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.897055,
+          25.570605399999998
+        ]
+      },
+      "properties": {
+        "place_id": "ChIJ8-MKCLt-UDcRr-fLnPG7nBI",
+        "name": "xplore cyber cafe shillong",
+        "address": "Bareh Building, Laitumkhrah Main Rd, Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India",
+        "zone": "Police Bazar & GS Road",
+        "rating": 4.3,
+        "is_verified": false,
+        "services": [],
+        "confidence": 0.0
+      }
+    }
+  ]
+};
+            var routeCoords = [[25.575820699999998, 91.8824605], [25.5751974, 91.88242489999999], [25.575017799999998, 91.8822962], [25.574814900000003, 91.88238199999999], [25.573853699999997, 91.8831907], [25.572626399999997, 91.88331699999999], [25.5701465, 91.8867238], [25.5701035, 91.8873186], [25.576499899999998, 91.883478], [25.5777334, 91.883409], [25.5785, 91.8835], [25.5788, 91.8833], [25.5792, 91.8828], [25.5774194, 91.88255], [25.577268999999998, 91.88200599999999], [25.577078699999998, 91.88204669999999], [25.576798099999998, 91.88222309999999], [25.576466999999997, 91.88184070000001], [25.5763887, 91.88043309999999], [25.578782699999998, 91.8789312], [25.5791062, 91.87781939999999], [25.5786816, 91.87783759999999], [25.5788132, 91.8774186], [25.5728, 91.8745], [25.5752833, 91.8702869], [25.5784062, 91.87498839999999], [25.58, 91.872], [25.581, 91.8725], [25.581, 91.873], [25.5840601, 91.87570649999999], [25.5885237, 91.8740297], [25.5915096, 91.87442709999999], [25.5895513, 91.8812662], [25.5947088, 91.8819422], [25.606, 91.874], [25.6035933, 91.8911511], [25.5965766, 91.88627799999999], [25.5926384, 91.8858771], [25.591, 91.8895], [25.5833546, 91.9008716], [25.5801913, 91.89718959999999], [25.5801968, 91.89833080000001], [25.571185099999997, 91.91099009999999], [25.5708965, 91.91209309999999], [25.570421999999997, 91.91913509999999], [25.5549397, 91.91690849999999], [25.5568767, 91.9116382], [25.562445900000004, 91.9047607], [25.5664643, 91.90010269999999], [25.5665193, 91.9001329], [25.569236399999998, 91.8974057], [25.570605399999998, 91.897055], [25.571, 91.896], [25.571, 91.896], [25.5707174, 91.8956832], [25.57, 91.895], [25.5685, 91.8942], [25.5690976, 91.8928736], [25.5643229, 91.8905403], [25.5651613, 91.8859033], [25.565286999999998, 91.885942], [25.567434499999997, 91.88539809999999], [25.5664037, 91.8842851], [25.565, 91.879], [25.564, 91.878], [25.5638, 91.8775], [25.525338500000004, 91.88672389999999]];
+
+            // Add pins
+            L.geoJSON(geojsonFeature, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties && feature.properties.name) {
+                        var popup = "<b>" + feature.properties.name + "</b><br>" + 
+                                    feature.properties.address + "<br><br>" + 
+                                    "⭐ " + (feature.properties.rating || 'N/A');
+                        layer.bindPopup(popup);
+                    }
+                }
+            }).addTo(map);
+
+            // Add route line
+            var polyline = L.polyline(routeCoords, {
+                color: '#38bdf8', 
+                weight: 4, 
+                opacity: 0.8, 
+                dashArray: '10, 10'
+            }).addTo(map);
+            
+            // map.fitBounds(polyline.getBounds());
+        });
+    </script>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-val">67</div>
+            <div class="stat-label">Total Shops Discovered</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">63</div>
+            <div class="stat-label">Street View Coverage</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">62</div>
+            <div class="stat-label">Images Downloaded</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" style="color: var(--accent-green);">40</div>
+            <div class="stat-label">Verified By Signage OCR</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="filter-btn active" onclick="filterCards('all')">Show All</button>
+        <button class="filter-btn" onclick="filterCards('verified')">Verified Only</button>
+        <button class="filter-btn" onclick="filterCards('unverified')">Needs Inspection</button>
+    </div>
+
+    <div class="grid" id="shopsGrid">
+        
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ-2LNRZJ-UDcRim6QvzPxq7s" src="images/img_extracted_1.jpeg" data-orig="images/img_extracted_2.jpeg" data-annotated="images/img_extracted_3.jpeg" alt="Abijit Xerox" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ-2LNRZJ-UDcRim6QvzPxq7s')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Abijit Xerox</h3>
+                <p class="address">Pulin Bhawan basement, Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.3</strong> / 5.0 (4 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.575820699999998,91.8824605" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ06ehFAB_UDcR5HQRiICJty0" src="images/img_extracted_4.jpeg" data-orig="images/img_extracted_5.jpeg" data-annotated="images/img_extracted_6.jpeg" alt="Ajoy Xerox Centre" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ06ehFAB_UDcR5HQRiICJty0')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Ajoy Xerox Centre</h3>
+                <p class="address">Keating Rd, below Adidas, Secretariat Hills, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (1 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.575017799999998,91.8822962" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Polo & Pynthorumkhrah">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJSaKLIV1_UDcRodJ2kh-RSVQ" src="images/img_extracted_7.jpeg" data-orig="images/img_extracted_8.jpeg" data-annotated="images/img_extracted_9.jpeg" alt="Artfix Design - THE BRANDING STORE -" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJSaKLIV1_UDcRodJ2kh-RSVQ')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Polo & Pynthorumkhrah</span>
+                </div>
+                <h3 class="shop-name">Artfix Design - THE BRANDING STORE -</h3>
+                <p class="address">next to Weilabha Meat Shop, Mawlai Phudmuri, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.7</strong> / 5.0 (14 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5895513,91.8812662" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laban & Last Stop">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJUYJICpF-UDcRABPGNUEThww" src="images/img_extracted_10.jpeg" data-orig="images/img_extracted_11.jpeg" data-annotated="images/img_extracted_12.jpeg" alt="BCD Computers" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJUYJICpF-UDcRABPGNUEThww')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laban & Last Stop</span>
+                </div>
+                <h3 class="shop-name">BCD Computers</h3>
+                <p class="address">HVFJ+WXC, Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.4</strong> / 5.0 (7 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.574814900000003,91.88238199999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJkVJC-7h_UDcR4UYteRD8KNk" src="images/img_extracted_13.jpeg" data-orig="images/img_extracted_14.jpeg" data-annotated="images/img_extracted_15.jpeg" alt="BDN XEROX CENTRE" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJkVJC-7h_UDcR4UYteRD8KNk')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">BDN XEROX CENTRE</h3>
+                <p class="address">Mawlai Phudmuri, Mawlai Mawdatbaki, phudmuri, Shillong, Meghalaya 793008, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5926384,91.8858771" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Iewduh (Bara Bazar) & Motphran">
+            
+            <div class="card-img-placeholder">
+                <span>No Street View Imagery Available</span>
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Iewduh (Bara Bazar) & Motphran</span>
+                </div>
+                <h3 class="shop-name">Bara Bazar Wholesale Bill Book & Printing</h3>
+                <p class="address">Iewduh Market, Motphran, Shillong 793002</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.0</strong> / 5.0 (29 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5728,91.8745" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJA_AVOJJ-UDcROogV4R0z6Cs" src="images/img_extracted_16.jpeg" data-orig="images/img_extracted_17.jpeg" data-annotated="images/img_extracted_18.jpeg" alt="Bcd Digital Printer" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJA_AVOJJ-UDcROogV4R0z6Cs')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Bcd Digital Printer</h3>
+                <p class="address">Brahmo Samaj 16, Keating Rd, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.0</strong> / 5.0 (8 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Digital & Custom Print</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#digital print</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5751974,91.88242489999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Iewduh (Bara Bazar) & Motphran">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJQbOlAZp-UDcRYwDr5T-WFTc" src="images/img_extracted_19.jpeg" data-orig="images/img_extracted_20.jpeg" data-annotated="images/img_extracted_21.jpeg" alt="Bison Enterprise" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJQbOlAZp-UDcRYwDr5T-WFTc')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Iewduh (Bara Bazar) & Motphran</span>
+                </div>
+                <h3 class="shop-name">Bison Enterprise</h3>
+                <p class="address">209 Lower, Buddhist Temple Rd, Lachumiere, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.567434499999997,91.88539809999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJnZOveLt-UDcR_qDtInJ7_8g" src="images/img_extracted_22.jpeg" data-orig="images/img_extracted_23.jpeg" data-annotated="images/img_extracted_24.jpeg" alt="Blendink Creative Studio" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJnZOveLt-UDcR_qDtInJ7_8g')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Blendink Creative Studio</h3>
+                <p class="address">Second Floor, Modrina Mansion, Laitumkhrah Main Rd, Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.9</strong> / 5.0 (48 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5707174,91.8956832" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJqaqq_5J-UDcRoqQScc8-rhc" src="images/img_extracted_25.jpeg" data-orig="images/img_extracted_26.jpeg" data-annotated="images/img_extracted_27.jpeg" alt="Bluebell Printers" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJqaqq_5J-UDcRoqQScc8-rhc')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Bluebell Printers</h3>
+                <p class="address">Quinton Road, opposite MUDA Parking Lot Entrance, below Hotel Seven Sisters, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5774194,91.88255" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Mawlai & NEHU Perimeter">
+            
+            <div class="card-img-placeholder">
+                <span>No Street View Imagery Available</span>
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Mawlai & NEHU Perimeter</span>
+                </div>
+                <h3 class="shop-name">Campus Edge Thesis Binding & Color Xerox</h3>
+                <p class="address">NEHU Gate, Mawlai, Shillong 793022</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.8</strong> / 5.0 (160 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.606,91.874" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJpzLVnU95UDcRbe2ToIniFnM" src="images/img_extracted_28.jpeg" data-orig="images/img_extracted_29.jpeg" data-annotated="images/img_extracted_30.jpeg" alt="Common service center(print & xerox)" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJpzLVnU95UDcRbe2ToIniFnM')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Common service center(print & xerox)</h3>
+                <p class="address">Unnamed Road, HWC9+5M6, Lummarboh, Rynjah, Shillong, Meghalaya 793006, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.570421999999997,91.91913509999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Polo & Pynthorumkhrah">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJB9_HKgB_UDcRvdopyWJ5xO0" src="images/img_extracted_31.jpeg" data-orig="images/img_extracted_32.jpeg" data-annotated="images/img_extracted_33.jpeg" alt="Computer Touch" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJB9_HKgB_UDcRvdopyWJ5xO0')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Polo & Pynthorumkhrah</span>
+                </div>
+                <h3 class="shop-name">Computer Touch</h3>
+                <p class="address">Main road, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5965766,91.88627799999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laban & Last Stop">
+            
+            <div class="card-img-container">
+                <img id="img_sv_CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF" src="images/img_extracted_34.jpeg" data-orig="images/img_extracted_35.jpeg" data-annotated="images/img_extracted_36.jpeg" alt="Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laban & Last Stop</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJQy1rLUNZMlFF</h3>
+                <p class="address">Laban & Last Stop Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.564,91.878" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_sv_CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF" src="images/img_extracted_37.jpeg" data-orig="images/img_extracted_38.jpeg" data-annotated="images/img_extracted_39.jpeg" alt="Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor CAoSF0NJSE0wb2dLRUlDQWdJRHUwYl80akFF</h3>
+                <p class="address">Laitumkhrah & Dhankheti Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.571,91.896" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_sv_CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E." src="images/img_extracted_40.jpeg" data-orig="images/img_extracted_41.jpeg" data-annotated="images/img_extracted_42.jpeg" alt="Crawler Anchor CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E." />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E.')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor CAoSFkNJSE0wb2dLRUlDQWdJRHFoYkRFU0E.</h3>
+                <p class="address">Laitumkhrah & Dhankheti Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.57,91.895" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Mawkhar & Jaiaw">
+            
+            <div class="card-img-container">
+                <img id="img_sv_U7EuQ8FEzAkbZdFw1iVZ_w" src="images/img_extracted_43.jpeg" data-orig="images/img_extracted_44.jpeg" data-annotated="images/img_extracted_45.jpeg" alt="Crawler Anchor U7EuQ8FEzAkbZdFw1iVZ_w" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_U7EuQ8FEzAkbZdFw1iVZ_w')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Mawkhar & Jaiaw</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor U7EuQ8FEzAkbZdFw1iVZ_w</h3>
+                <p class="address">Mawkhar & Jaiaw Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.581,91.873" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Mawkhar & Jaiaw">
+            
+            <div class="card-img-container">
+                <img id="img_sv_mqURVjUUhepnL0DYDRSMXA" src="images/img_extracted_46.jpeg" data-orig="images/img_extracted_47.jpeg" data-annotated="images/img_extracted_48.jpeg" alt="Crawler Anchor mqURVjUUhepnL0DYDRSMXA" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_mqURVjUUhepnL0DYDRSMXA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Mawkhar & Jaiaw</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor mqURVjUUhepnL0DYDRSMXA</h3>
+                <p class="address">Mawkhar & Jaiaw Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.58,91.872" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_sv_wHiQ9bgRBDAZjlON-womQg" src="images/img_extracted_49.jpeg" data-orig="images/img_extracted_50.jpeg" data-annotated="images/img_extracted_51.jpeg" alt="Crawler Anchor wHiQ9bgRBDAZjlON-womQg" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_wHiQ9bgRBDAZjlON-womQg')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor wHiQ9bgRBDAZjlON-womQg</h3>
+                <p class="address">Police Bazar & GS Road Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5788,91.8833" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laban & Last Stop">
+            
+            <div class="card-img-container">
+                <img id="img_sv_yaIvbmG-PTdZyppcOzZ_HQ" src="images/img_extracted_52.jpeg" data-orig="images/img_extracted_53.jpeg" data-annotated="images/img_extracted_54.jpeg" alt="Crawler Anchor yaIvbmG-PTdZyppcOzZ_HQ" />
+                
+            <button class="btn-toggle" onclick="toggleImage('sv_yaIvbmG-PTdZyppcOzZ_HQ')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laban & Last Stop</span>
+                </div>
+                <h3 class="shop-name">Crawler Anchor yaIvbmG-PTdZyppcOzZ_HQ</h3>
+                <p class="address">Laban & Last Stop Area</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.565,91.879" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJreAPfEB_UDcR0k21AD0Xj2I" src="images/img_extracted_55.jpeg" data-orig="images/img_extracted_56.jpeg" data-annotated="images/img_extracted_57.jpeg" alt="D.M Stationery" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJreAPfEB_UDcR0k21AD0Xj2I')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">D.M Stationery</h3>
+                <p class="address">Adventist Church, 1, Manroi Complex, near Seventh day, Laitumkhrah, Shillong, Meghalaya 793014, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (3 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">DTP & Document Finishing</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#stationery</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5664643,91.90010269999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJldDZXqV-UDcR9l3NQO9QMQU" src="images/img_extracted_58.jpeg" data-orig="images/img_extracted_59.jpeg" data-annotated="images/img_extracted_60.jpeg" alt="Daly's Digital" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJldDZXqV-UDcR9l3NQO9QMQU')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Daly's Digital</h3>
+                <p class="address">Laitumkhrah, Shillong, Meghalaya 793014, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.8</strong> / 5.0 (252 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5665193,91.9001329" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJZ9tD_Px_UDcRofT0G64U2YU" src="images/img_extracted_61.jpeg" data-orig="images/img_extracted_62.jpeg" data-annotated="images/img_extracted_63.jpeg" alt="Deron Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJZ9tD_Px_UDcRofT0G64U2YU')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Deron Printing</h3>
+                <p class="address">43, Mawkhar Main Rd, Mawkhar, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5788132,91.8774186" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJO56j5nd_UDcRfowITN6Jb9Y" src="images/img_extracted_64.jpeg" data-orig="images/img_extracted_65.jpeg" data-annotated="images/img_extracted_66.jpeg" alt="Digital Studio" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJO56j5nd_UDcRfowITN6Jb9Y')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Digital Studio</h3>
+                <p class="address">Center Point Muda Complex, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (16 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.576798099999998,91.88222309999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJk0R1DLl_UDcRATkYItcYpzI" src="images/img_extracted_67.jpeg" data-orig="images/img_extracted_68.jpeg" data-annotated="images/img_extracted_69.jpeg" alt="Don Bosco Printing Press" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJk0R1DLl_UDcRATkYItcYpzI')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (75%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Don Bosco Printing Press</h3>
+                <p class="address">HV9V+G2R, Lachumiere, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (1 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span><span class="chip-kw">#printing press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5690976,91.8928736" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJW30-33R_UDcRmCwI8CzvPcc" src="images/img_extracted_70.jpeg" data-orig="images/img_extracted_71.jpeg" data-annotated="images/img_extracted_72.jpeg" alt="EZ Print Srvcs" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJW30-33R_UDcRmCwI8CzvPcc')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">EZ Print Srvcs</h3>
+                <p class="address">Pdeng, Jaiaw, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (4 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5840601,91.87570649999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_shillong_place_001" src="images/img_extracted_73.jpeg" data-orig="images/img_extracted_74.jpeg" data-annotated="images/img_extracted_75.jpeg" alt="Eastern Offset Printers" />
+                
+            <button class="btn-toggle" onclick="toggleImage('shillong_place_001')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (100%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Eastern Offset Printers</h3>
+                <p class="address">Police Bazar, Shillong, Meghalaya 793001</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.3</strong> / 5.0 (48 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span><span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Digital & Custom Print</span><span class="pill pill-service">Flex & Outdoor Signage</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#banner</span><span class="chip-kw">#digital print</span><span class="chip-kw">#dtp</span><span class="chip-kw">#flex</span><span class="chip-kw">#offset</span><span class="chip-kw">#press</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5785,91.8835" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJGYFO6px_UDcRLcz51OerInM" src="images/img_extracted_76.jpeg" data-orig="images/img_extracted_77.jpeg" data-annotated="images/img_extracted_78.jpeg" alt="Eastern Panorama Offset" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJGYFO6px_UDcRLcz51OerInM')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Eastern Panorama Offset</h3>
+                <p class="address">RPG Complex, Keating Rd, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (25 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#offset</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.573853699999997,91.8831907" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJNa4bL5R_UDcR1WlQeZQsnqA" src="images/img_extracted_79.jpeg" data-orig="images/img_extracted_80.jpeg" data-annotated="images/img_extracted_81.jpeg" alt="Hep Creative Print" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJNa4bL5R_UDcR1WlQeZQsnqA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Hep Creative Print</h3>
+                <p class="address">Hep Creative Printing, Umsohsun, Police Bazar, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (18 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.578782699999998,91.8789312" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJR8cXqZN-UDcRiBP0zeSlq-8" src="images/img_extracted_82.jpeg" data-orig="images/img_extracted_83.jpeg" data-annotated="images/img_extracted_84.jpeg" alt="Hynniewtrep Printing Press" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJR8cXqZN-UDcRiBP0zeSlq-8')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (75%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Hynniewtrep Printing Press</h3>
+                <p class="address">Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.8</strong> / 5.0 (5 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span><span class="chip-kw">#printing press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.576499899999998,91.883478" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Polo & Pynthorumkhrah">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJPZ7V3-R-UDcR5ckMOTyN7BY" src="images/img_extracted_85.jpeg" data-orig="images/img_extracted_86.jpeg" data-annotated="images/img_extracted_87.jpeg" alt="Image Banpynbiang" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJPZ7V3-R-UDcR5ckMOTyN7BY')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Polo & Pynthorumkhrah</span>
+                </div>
+                <h3 class="shop-name">Image Banpynbiang</h3>
+                <p class="address">Nongpdeng, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.4</strong> / 5.0 (30 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5947088,91.8819422" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Iewduh (Bara Bazar) & Motphran">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJkbEFwYh_UDcRFAtXcZ2PKTY" src="images/img_extracted_88.jpeg" data-orig="images/img_extracted_89.jpeg" data-annotated="images/img_extracted_90.jpeg" alt="KAMTA ART PRESS" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJkbEFwYh_UDcRFAtXcZ2PKTY')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Iewduh (Bara Bazar) & Motphran</span>
+                </div>
+                <h3 class="shop-name">KAMTA ART PRESS</h3>
+                <p class="address">RAMJI BUILDING, Garikhana, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5752833,91.8702869" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJo-1TvXB_UDcRL61nsultOhY" src="images/img_extracted_91.jpeg" data-orig="images/img_extracted_92.jpeg" data-annotated="images/img_extracted_93.jpeg" alt="Kharpor Xerox and Printing Enterprise" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJo-1TvXB_UDcRL61nsultOhY')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Kharpor Xerox and Printing Enterprise</h3>
+                <p class="address">JV3R+CJC, Mawlai Mawdatbaki, Shillong, Meghalaya 793008, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (4 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.6035933,91.8911511" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_shillong_place_002" src="images/img_extracted_94.jpeg" data-orig="images/img_extracted_95.jpeg" data-annotated="images/img_extracted_96.jpeg" alt="Khasi Hills Digital & Flex Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('shillong_place_002')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (100%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Khasi Hills Digital & Flex Printing</h3>
+                <p class="address">GS Road, Police Bazar, Shillong 793001</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (82 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span><span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Digital & Custom Print</span><span class="pill pill-service">Flex & Outdoor Signage</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#banner</span><span class="chip-kw">#digital print</span><span class="chip-kw">#dtp</span><span class="chip-kw">#flex</span><span class="chip-kw">#offset</span><span class="chip-kw">#press</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5792,91.8828" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ2UOrGpd-UDcRhP0Qw0S73hI" src="images/img_extracted_97.jpeg" data-orig="images/img_extracted_98.jpeg" data-annotated="images/img_extracted_99.jpeg" alt="L. Centre Xerox" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ2UOrGpd-UDcRhP0Qw0S73hI')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">L. Centre Xerox</h3>
+                <p class="address">HVCP+2WW, opposite DIPR Office, Block 3, Lower, Lachumiere, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.1</strong> / 5.0 (7 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5701035,91.8873186" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laban & Last Stop">
+            
+            <div class="card-img-container">
+                <img id="img_shillong_place_008" src="images/img_extracted_100.jpeg" data-orig="images/img_extracted_101.jpeg" data-annotated="images/img_extracted_102.jpeg" alt="Laban Graphic Signs & Mug Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('shillong_place_008')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (100%)</span>
+                    <span class="badge badge-zone">Laban & Last Stop</span>
+                </div>
+                <h3 class="shop-name">Laban Graphic Signs & Mug Printing</h3>
+                <p class="address">Last Stop, Laban, Shillong 793004</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.4</strong> / 5.0 (37 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span><span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Digital & Custom Print</span><span class="pill pill-service">Flex & Outdoor Signage</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#banner</span><span class="chip-kw">#digital print</span><span class="chip-kw">#dtp</span><span class="chip-kw">#flex</span><span class="chip-kw">#mug print</span><span class="chip-kw">#offset</span><span class="chip-kw">#press</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5638,91.8775" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJYd69NxZ9UDcRSjLOH1ruqRA" src="images/img_extracted_103.jpeg" data-orig="images/img_extracted_104.jpeg" data-annotated="images/img_extracted_105.jpeg" alt="Laganada Printing Press" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJYd69NxZ9UDcRSjLOH1ruqRA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (75%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Laganada Printing Press</h3>
+                <p class="address">Shillong, Meghalaya 793010, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.8</strong> / 5.0 (48 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span><span class="chip-kw">#printing press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.525338500000004,91.88672389999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJA3SsxYx-UDcRFhrKRrApGc4" src="images/img_extracted_106.jpeg" data-orig="images/img_extracted_107.jpeg" data-annotated="images/img_extracted_108.jpeg" alt="M/S. Nongkynrih Brother's" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJA3SsxYx-UDcRFhrKRrApGc4')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">M/S. Nongkynrih Brother's</h3>
+                <p class="address">Room No. 11, Synod Complex, Mawkhar, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>3.6</strong> / 5.0 (387 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5791062,91.87781939999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJrxntj8d-UDcR2KUec5iwiMI" src="images/img_extracted_109.jpeg" data-orig="images/img_extracted_110.jpeg" data-annotated="images/img_extracted_111.jpeg" alt="M/s Mawsawa Digital Flex Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJrxntj8d-UDcR2KUec5iwiMI')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">M/s Mawsawa Digital Flex Printing</h3>
+                <p class="address">Syiem Building, B.C, below HDFC Bank Ltd, near NEEPCO Building, Demseiñ-Ïong, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>3.7</strong> / 5.0 (158 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Flex & Outdoor Signage</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#flex</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5801968,91.89833080000001" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-placeholder">
+                <span>No Street View Imagery Available</span>
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Marboh Printing Press</h3>
+                <p class="address">North 2, opposite Red Filed, Pohkseh, Shillong, Meghalaya 793006, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.571185099999997,91.91099009999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Polo & Pynthorumkhrah">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJU6pgfeV_UDcRju8j5yeSRnE" src="images/img_extracted_112.jpeg" data-orig="images/img_extracted_113.jpeg" data-annotated="images/img_extracted_114.jpeg" alt="Mawlai Stationery" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJU6pgfeV_UDcRju8j5yeSRnE')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Polo & Pynthorumkhrah</span>
+                </div>
+                <h3 class="shop-name">Mawlai Stationery</h3>
+                <p class="address">HVRF+JQ3, TSS Road, Mawlai Mawdatbaki, Nonglum, Shillong, Meghalaya 793017, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.7</strong> / 5.0 (3 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">DTP & Document Finishing</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#stationery</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5915096,91.87442709999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJe14jdJF-UDcRZZSfhucmWrc" src="images/img_extracted_115.jpeg" data-orig="images/img_extracted_116.jpeg" data-annotated="images/img_extracted_117.jpeg" alt="Megha Impression" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJe14jdJF-UDcRZZSfhucmWrc')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Megha Impression</h3>
+                <p class="address">Keating Rd, Secretariat Hills, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.7</strong> / 5.0 (33 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.572626399999997,91.88331699999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ-S95hJl-UDcRbFo05_0E8Do" src="images/img_extracted_118.jpeg" data-orig="images/img_extracted_119.jpeg" data-annotated="images/img_extracted_120.jpeg" alt="Meghalaya Print" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ-S95hJl-UDcRbFo05_0E8Do')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Meghalaya Print</h3>
+                <p class="address">Malki Point, Malki, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.3</strong> / 5.0 (26 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.565286999999998,91.885942" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJecZdH7t-UDcR-EFuB0WkmLs" src="images/img_extracted_121.jpeg" data-orig="images/img_extracted_122.jpeg" data-annotated="images/img_extracted_123.jpeg" alt="Modern Arts" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJecZdH7t-UDcR-EFuB0WkmLs')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Modern Arts</h3>
+                <p class="address">Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.9</strong> / 5.0 (37 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.569236399999998,91.8974057" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJb4BpYEx_UDcRXngEJkXCoXU" src="images/img_extracted_124.jpeg" data-orig="images/img_extracted_125.jpeg" data-annotated="images/img_extracted_126.jpeg" alt="Passport Seva Kendra, Shillong" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJb4BpYEx_UDcRXngEJkXCoXU')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (20%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Passport Seva Kendra, Shillong</h3>
+                <p class="address">Social Welfare Department, Lachumiere, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.2</strong> / 5.0 (45 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5701465,91.8867238" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-placeholder">
+                <span>No Street View Imagery Available</span>
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Pine City DTP & Book Binding Works</h3>
+                <p class="address">Dhankheti Point, Shillong 793003</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.1</strong> / 5.0 (31 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5685,91.8942" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Polo & Pynthorumkhrah">
+            
+            <div class="card-img-placeholder">
+                <span>No Street View Imagery Available</span>
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Polo & Pynthorumkhrah</span>
+                </div>
+                <h3 class="shop-name">Polo Industrial Flex & Sign Board House</h3>
+                <p class="address">Near Polo Ground, Shillong 793001</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.2</strong> / 5.0 (53 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.591,91.8895" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ6cyfegB_UDcRj-kmdC60XXQ" src="images/img_extracted_127.jpeg" data-orig="images/img_extracted_128.jpeg" data-annotated="images/img_extracted_129.jpeg" alt="Print 'N' Publish" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ6cyfegB_UDcRj-kmdC60XXQ')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Print 'N' Publish</h3>
+                <p class="address">Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>3.0</strong> / 5.0 (4 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#printing press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.577078699999998,91.88204669999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJr8raho1-UDcRevUr6fwb1Z4" src="images/img_extracted_130.jpeg" data-orig="images/img_extracted_131.jpeg" data-annotated="images/img_extracted_132.jpeg" alt="Print World" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJr8raho1-UDcRevUr6fwb1Z4')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Print World</h3>
+                <p class="address">2nd Floor, Mirullah Building, G.S, GS Rd, Secretariat Hills, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.9</strong> / 5.0 (35 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5763887,91.88043309999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJDZekMgB_UDcRgHCWI74sr18" src="images/img_extracted_133.jpeg" data-orig="images/img_extracted_134.jpeg" data-annotated="images/img_extracted_135.jpeg" alt="PrintLab" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJDZekMgB_UDcRgHCWI74sr18')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">PrintLab</h3>
+                <p class="address">Jylli Kharkongor, Ground floor, Jylli Shop, Nongthymmai, Shillong, Meghalaya 793014, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (1 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.562445900000004,91.9047607" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJx5lP63R_UDcRnFN2ObWpWjU" src="images/img_extracted_136.jpeg" data-orig="images/img_extracted_137.jpeg" data-annotated="images/img_extracted_138.jpeg" alt="R93 xerox & printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJx5lP63R_UDcRnFN2ObWpWjU')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">R93 xerox & printing</h3>
+                <p class="address">opposite NEEPCO office, Demseiñ-Ïong, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5801913,91.89718959999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJOZlWqex-UDcRU1ypzQv83VU" src="images/img_extracted_139.jpeg" data-orig="images/img_extracted_140.jpeg" data-annotated="images/img_extracted_141.jpeg" alt="Reliance Digital" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJOZlWqex-UDcRU1ypzQv83VU')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Reliance Digital</h3>
+                <p class="address">2nd Floor, Marba Hub, opposite KFC, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.7</strong> / 5.0 (4725 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.576466999999997,91.88184070000001" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJv4cI3Ix-UDcROGlv4rWuSQ8" src="images/img_extracted_142.jpeg" data-orig="images/img_extracted_143.jpeg" data-annotated="images/img_extracted_144.jpeg" alt="Rilum Offset Printing House" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJv4cI3Ix-UDcROGlv4rWuSQ8')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Rilum Offset Printing House</h3>
+                <p class="address">Parking, near Jaiaw, Umsohsun, Police Bazar, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#offset</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5786816,91.87783759999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Mawkhar & Jaiaw">
+            
+            <div class="card-img-container">
+                <img id="img_shillong_place_006" src="images/img_extracted_145.jpeg" data-orig="images/img_extracted_146.jpeg" data-annotated="images/img_extracted_147.jpeg" alt="Shillong Times Press Commercial Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('shillong_place_006')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (100%)</span>
+                    <span class="badge badge-zone">Mawkhar & Jaiaw</span>
+                </div>
+                <h3 class="shop-name">Shillong Times Press Commercial Printing</h3>
+                <p class="address">Mawkhar Main Road, Shillong 793001</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.7</strong> / 5.0 (94 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span><span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Digital & Custom Print</span><span class="pill pill-service">Flex & Outdoor Signage</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#banner</span><span class="chip-kw">#digital print</span><span class="chip-kw">#dtp</span><span class="chip-kw">#flex</span><span class="chip-kw">#offset</span><span class="chip-kw">#press</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.581,91.8725" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJMbkTlJJ-UDcR0Ne0XnPGUYM" src="images/img_extracted_148.jpeg" data-orig="images/img_extracted_149.jpeg" data-annotated="images/img_extracted_150.jpeg" alt="Singhania Printing Press/Print Xpress" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJMbkTlJJ-UDcR0Ne0XnPGUYM')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (75%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Singhania Printing Press/Print Xpress</h3>
+                <p class="address">HVHM+39V, Thana Road, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>3.7</strong> / 5.0 (36 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#press</span><span class="chip-kw">#printing press</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5777334,91.883409" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_shillong_place_003" src="images/img_extracted_151.jpeg" data-orig="images/img_extracted_152.jpeg" data-annotated="images/img_extracted_153.jpeg" alt="St. Anthony's Cyber & Xerox Center" />
+                
+            <button class="btn-toggle" onclick="toggleImage('shillong_place_003')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (100%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">St. Anthony's Cyber & Xerox Center</h3>
+                <p class="address">Laitumkhrah Main Road, Shillong 793003</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.6</strong> / 5.0 (115 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Commercial & Offset</span><span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Digital & Custom Print</span><span class="pill pill-service">Flex & Outdoor Signage</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#banner</span><span class="chip-kw">#digital print</span><span class="chip-kw">#dtp</span><span class="chip-kw">#flex</span><span class="chip-kw">#offset</span><span class="chip-kw">#press</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.571,91.896" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJceDJhP17UDcRdP0lANoygCA" src="images/img_extracted_154.jpeg" data-orig="images/img_extracted_155.jpeg" data-annotated="images/img_extracted_156.jpeg" alt="Stationery" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJceDJhP17UDcRdP0lANoygCA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">Stationery</h3>
+                <p class="address">Assam Bazar Taxy Stand, Happy Valley, Shillong, Meghalaya 793021, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>3.7</strong> / 5.0 (998 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">DTP & Document Finishing</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#stationery</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5549397,91.91690849999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ682sFT5_UDcR2QZdYC6Q480" src="images/img_extracted_157.jpeg" data-orig="images/img_extracted_158.jpeg" data-annotated="images/img_extracted_159.jpeg" alt="Thabah Printing" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ682sFT5_UDcR2QZdYC6Q480')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Thabah Printing</h3>
+                <p class="address">Mawlai Mawdatbaki, Shillong, Meghalaya 793017, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5885237,91.8740297" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Iewduh (Bara Bazar) & Motphran">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJg67Odfx_UDcRmyYiFTe8UDs" src="images/img_extracted_160.jpeg" data-orig="images/img_extracted_161.jpeg" data-annotated="images/img_extracted_162.jpeg" alt="The Memento Hub" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJg67Odfx_UDcRmyYiFTe8UDs')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (20%)</span>
+                    <span class="badge badge-zone">Iewduh (Bara Bazar) & Motphran</span>
+                </div>
+                <h3 class="shop-name">The Memento Hub</h3>
+                <p class="address">Lad Qualapaty, opposite Sein Raij, Mawkhar, Shillong, Meghalaya 793002, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (8 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">Digital & Custom Print</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#memento</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5784062,91.87498839999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJLTO4g5l-UDcRvGaI7e516L0" src="images/img_extracted_163.jpeg" data-orig="images/img_extracted_164.jpeg" data-annotated="images/img_extracted_165.jpeg" alt="TheHub Malki" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJLTO4g5l-UDcRvGaI7e516L0')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">TheHub Malki</h3>
+                <p class="address">01, Malki Point, Malki, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.8</strong> / 5.0 (5 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5651613,91.8859033" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJjWIBkch-UDcRo2RlLTW3rHA" src="images/img_extracted_166.jpeg" data-orig="images/img_extracted_167.jpeg" data-annotated="images/img_extracted_168.jpeg" alt="Tiwari & Son's" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJjWIBkch-UDcRo2RlLTW3rHA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Tiwari & Son's</h3>
+                <p class="address">B.R. Complex, Urban Health Centre, opposite to Pynthorbah, near GOLF COURSE, 3 Mile, BLOCK-1, Pynthorbah, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (5 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5833546,91.9008716" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJd3hw2wZ_UDcR-GboBQFsu7Y" src="images/img_extracted_169.jpeg" data-orig="images/img_extracted_170.jpeg" data-annotated="images/img_extracted_171.jpeg" alt="Topnotch Print and Stationery Centre" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJd3hw2wZ_UDcR-GboBQFsu7Y')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (60%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Topnotch Print and Stationery Centre</h3>
+                <p class="address">Malki, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>0.0</strong> / 5.0 (0 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">DTP & Document Finishing</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#stationery</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5643229,91.8905403" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ_8KRJ3h_UDcRCEBi7S7-lsY" src="images/img_extracted_172.jpeg" data-orig="images/img_extracted_173.jpeg" data-annotated="images/img_extracted_174.jpeg" alt="Typing & Xerox Centre" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ_8KRJ3h_UDcRCEBi7S7-lsY')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (90%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">Typing & Xerox Centre</h3>
+                <p class="address">Quinton Road, Police Bazar, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.5</strong> / 5.0 (2 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="pill pill-service">DTP & Document Finishing</span><span class="pill pill-service">Xerox & Copying</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="chip-kw">#typing</span><span class="chip-kw">#xerox</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.577268999999998,91.88200599999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJJ5XNLbh_UDcRORd3Rpk1jrk" src="images/img_extracted_175.jpeg" data-orig="images/img_extracted_176.jpeg" data-annotated="images/img_extracted_177.jpeg" alt="WMPrints" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJJ5XNLbh_UDcRORd3Rpk1jrk')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">WMPrints</h3>
+                <p class="address">Lower, Lachumiere, Shillong, Meghalaya 793001, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>2.0</strong> / 5.0 (1 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5664037,91.8842851" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJr-nCtuh5UDcReBf2OiPkook" src="images/img_extracted_178.jpeg" data-orig="images/img_extracted_179.jpeg" data-annotated="images/img_extracted_180.jpeg" alt="YANLINE" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJr-nCtuh5UDcReBf2OiPkook')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">YANLINE</h3>
+                <p class="address">Room 16, E S Shopping Complex, Demthring, Shillong, Meghalaya 793021, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (49 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5568767,91.9116382" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="true" data-zone="Laitumkhrah & Dhankheti">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJfYNo9vZ5UDcRRMoJnn65ngA" src="images/img_extracted_181.jpeg" data-orig="images/img_extracted_182.jpeg" data-annotated="images/img_extracted_183.jpeg" alt="iPrint Shillong" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJfYNo9vZ5UDcRRMoJnn65ngA')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-verified">VERIFIED (40%)</span>
+                    <span class="badge badge-zone">Laitumkhrah & Dhankheti</span>
+                </div>
+                <h3 class="shop-name">iPrint Shillong</h3>
+                <p class="address">Gameplay cyber cafe, Rynjah Main Rd, Rynjah, Shillong, Meghalaya 793006, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>5.0</strong> / 5.0 (3 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.5708965,91.91209309999999" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="card" data-verified="false" data-zone="Police Bazar & GS Road">
+            
+            <div class="card-img-container">
+                <img id="img_ChIJ8-MKCLt-UDcRr-fLnPG7nBI" src="images/img_extracted_184.jpeg" data-orig="images/img_extracted_185.jpeg" data-annotated="images/img_extracted_186.jpeg" alt="xplore cyber cafe shillong" />
+                
+            <button class="btn-toggle" onclick="toggleImage('ChIJ8-MKCLt-UDcRr-fLnPG7nBI')">Toggle OCR Bounding Boxes</button>
+            
+            </div>
+            
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="badge badge-unverified">UNVERIFIED</span>
+                    <span class="badge badge-zone">Police Bazar & GS Road</span>
+                </div>
+                <h3 class="shop-name">xplore cyber cafe shillong</h3>
+                <p class="address">Bareh Building, Laitumkhrah Main Rd, Nongkynrih, Laitumkhrah, Shillong, Meghalaya 793003, India</p>
+                <div class="rating-bar">
+                    ⭐ <strong>4.3</strong> / 5.0 (103 reviews)
+                </div>
+                <div class="section-title">Detected Services:</div>
+                <div class="pills-container">
+                    <span class="text-muted">None detected</span>
+                </div>
+                <div class="section-title">Signboard Keywords:</div>
+                <div class="keywords-container">
+                    <span class="text-muted">No keywords</span>
+                </div>
+                <div class="card-footer">
+                    <a href="https://www.google.com/maps/search/?api=1&query=25.570605399999998,91.897055" target="_blank" class="btn-maps">📍 Open in Google Maps</a>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        function filterCards(type) {
+            const cards = document.querySelectorAll('.card');
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            cards.forEach(card => {
+                const isVerified = card.getAttribute('data-verified') === 'true';
+                if (type === 'all') {
+                    card.style.display = 'flex';
+                } else if (type === 'verified') {
+                    card.style.display = isVerified ? 'flex' : 'none';
+                } else if (type === 'unverified') {
+                    card.style.display = !isVerified ? 'flex' : 'none';
+                }
+            });
+        }
+
+        function toggleImage(placeId) {
+            const img = document.getElementById('img_' + placeId);
+            if (!img) return;
+            const orig = img.getAttribute('data-orig');
+            const annotated = img.getAttribute('data-annotated');
+            if (img.src === annotated) {
+                img.src = orig;
+            } else {
+                img.src = annotated;
+            }
+        }
+    </script>
+</body>
+</html>
